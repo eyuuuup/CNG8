@@ -33,24 +33,24 @@ def getData():
             print("[" + username + " -> me] " + message)
 
         elif data_list[0] == "BUSY":
-            print("Server is full, fuck off.")
+            print("Server is full, fuck off.\n")
 
         elif data_list[0] == "IN-USE":
-            print("Username already taken, try again")
+            print("Username already taken, try again\n")
             #https://stackoverflow.com/questions/40519375/what-does-x-is-used-prior-to-global-declaration-mean-python-2
             s = connect()
             login()
 
         elif data_list[0] == "SEND-OK":
-            print("Message sent")
+            print("Message sent.\n")
 
         elif data_list[0] == "WHO-OK":
             print("Users online: ")
             for x in data_list[1:]:
                 print(x)
-
+            print("\n")
         elif data_list[0] == "UNKNOWN":
-            print("User not online")
+            print("User not online.")
 
         else: 
             print(data_string)
