@@ -85,7 +85,7 @@ login()
 while(True):
     #https://www.pythoncentral.io/pythons-time-sleep-pause-wait-sleep-stop-your-code/
     time.sleep(0.5)
-    command = input("Type in your command: ")
+    command = input("Type in your command: \n")
     if command == "!quit":
         s.close()
         #https://stackoverflow.com/questions/14639077/how-to-use-sys-exit-in-python
