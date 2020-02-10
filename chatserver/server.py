@@ -28,9 +28,9 @@ def client_thread(clientsocket, address):
                 data_list = data_string.split()
                 
                 if data_list[0] == "HELLO-FROM":
-
+                    username = data_list[1]
                     for x in clients:
-                        if x.name == data_list[1]:
+                        if x.name == username:
                             string_bytes = "IN-USE"
                             clientsocket.sendall(string_bytes.encode("utf-8"))
                             clientsocket.close()
@@ -46,12 +46,15 @@ def client_thread(clientsocket, address):
                     string_bytes = "WHO-OK "
                     for x in clients:
                         string_bytes += x.name + " "
-
                     clientsocket.sendall(string_bytes.encode("utf-8"))
+                
                 elif data_list[0] == "SEND":
                     username = data_list[1]
-                    message = data_list[2]
-                    
+                    message = ""
+            
+                    for x in data_list[2:]:
+                        message += x + " "
+
                     online = False
                     for x in clients:
                         if x.name == username:
