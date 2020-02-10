@@ -5,7 +5,7 @@ import time
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(('localhost', 1337))
-serversocket.listen(5)
+serversocket.listen(64)
 clients = []
 
 class User:
@@ -22,6 +22,10 @@ class User:
 def client_thread(clientsocket, address):
     while True:
         try:
+             if len(clients) >= 64:
+                string_bytes = "BUSY"
+                clientsocket.sendall(string_bytes.encode("utf-8"))
+                return
             data = clientsocket.recv(4096)
             if data:
                 data_string = data.decode("utf-8")
@@ -68,6 +72,9 @@ def client_thread(clientsocket, address):
                     if not online:
                         string_bytes = "UNKNOWN"
                         clientsocket.sendall(string_bytes.encode("utf-8"))
+                    else:
+                      string_bytes = "BAD-RQST-HDR"
+                      clientsocket.sendall(string_bytes.encode("utf-8"))
             else:
                 for x in clients:
                     if x.clientsocket == clientsocket:
