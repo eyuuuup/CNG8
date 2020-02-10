@@ -5,7 +5,7 @@ import time
 
 def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("18.195.107.195", 5378))
+    s.connect(("localhost", 1337))
     return s
 
 s = connect()
