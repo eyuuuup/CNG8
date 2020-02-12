@@ -3,23 +3,18 @@ import threading
 import sys
 import time
 
+def connect():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("18.195.107.195", 5382))
+    return s
 
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server = ("18.195.107.195", 5382)
-while True:
-    name = input("Enter your username: ")
-    msg = b"HELLO-FROM lol\n"
-    s.sendto(msg, ("18.195.107.195", 5382))
-    data = s.recvfrom(1024)
-    print(data[0])
-
+s = connect()
 
 def getData():
     while (True):
         #https://stackoverflow.com/questions/423379/using-global-variables-in-a-function
         global s
-        data = s.recvfrom(4096)
-        print(format(data))
+        data = s.recv(4096)
         #https://www.w3resource.com/python/python-bytes.php#byte-string
         data_string = data.decode("utf-8")
         data_list = data_string.split()
@@ -66,14 +61,14 @@ t.daemon = True
 t.start()
 
 def sendDataString(string_bytes):
-    # string_bytes += "\n"
+    string_bytes += "\n"
     #https://stackoverflow.com/questions/42612002/python-sockets-error-typeerror-a-bytes-like-object-is-required-not-str-with?noredirect=1&lq=1
-    # string_bytes = string_bytes.encode("utf-8")
-    s.sendto(string_bytes, server)
+    string_bytes = string_bytes.encode("utf-8")
+    s.sendall(string_bytes)
 
 def login():
     name = input("Enter your username: ")
-    sendDataString(b"HELLO-FROM lol")
+    sendDataString("HELLO-FROM " + name)
 
 def sendMessage(messageTBS):
     #https://stackoverflow.com/questions/6903557/splitting-on-first-occurrence
@@ -85,6 +80,7 @@ def sendMessage(messageTBS):
 
     sendDataString("SEND " + username + " " + message)
     print("[me -> " + username + "] " + message)
+
     
 login()
 while(True):
@@ -100,5 +96,5 @@ while(True):
     elif command[0] == '@':
         sendMessage(command)
     else: 
-         print("command not found")
+        sendDataString(command)
     time.sleep(0.5)
