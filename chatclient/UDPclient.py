@@ -5,7 +5,7 @@ import time
 
 def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("172.20.10.4", 5382))
+    s.connect(("localhost", 1337))
     return s
 
 s = connect()
@@ -16,28 +16,39 @@ def getData():
         global s
         data = s.recv(4096)
         
+        data_string = data.decode("utf-8")
+        data_list = data_string.split()
 
-        data_list_bytes = data.split()
-        if len(data_list_bytes) == 3:
-            dataArray = bytearray(data_list_bytes[2])
-            dataArraySplit = dataArray.split(b"{")
-            print(dataArray[0])
+        if len(data_list) == 3 and data_list[0] != "WHO-OK":
+
+            #Send 100 if you want to test this, replace acmessage with one of these.
+            message1bitFlipped = b"101"
+            message2bitFlipped = b"111"
+            message3bitFlipped = b"011"
+            acmessage = data_list[2].split('{')[0]
+            lrcRecieved = data_list[2].split('{')[1]
+
+            print("MESSAGE INTO BYTEARRAY: " + acmessage)
+            dataArray = bytearray(acmessage.encode())
             
+            #https://en.wikipedia.org/wiki/Checksum
+            #https://stackoverflow.com/questions/29569791/incorrect-lrc-value-calculated-from-checksum
             lrc = 0
-            for x in dataArraySplit[0]:
-                lrc = (lrc + x) + 0xFF
-            lrc = (((lrc ^ 0xFF) + 1) + 0xFF)
-            print(lrc)
+            for b in dataArray:
+                lrc ^= b
+            print("checksum of recieved message: " + str(lrc))
             
-            if(lrc == dataArraySplit[1]):
-                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            print("checsum of ARRIVED sent message: " + str(lrcRecieved))
+           
+            if (str(lrc) == str(lrcRecieved)):
+               print("No odd-bit error, but you might want to check for a double digit error")
+            else:
+                print("Yeah you have a odd-bit error")
             
 
 
         #https://www.w3resource.com/python/python-bytes.php#byte-string
-        data_string = data.decode("utf-8")
-        print(data_string)
-        data_list = data_string.split()
+      
         #print("LOOK: " +  data_list[0])
         #print(data_list)
 
@@ -46,11 +57,8 @@ def getData():
 
         elif data_list[0] == "DELIVERY":
             username = data_list[1]
-            message = ""
-            #https://stackoverflow.com/questions/6148619/start-index-for-iterating-python-list
-            for x in data_list[2:]:
-                message += x + " "
-            print("[" + username + " -> me] " + message)
+            acmessage = data_list[2].split('{')[0]
+            print("[" + username + " -> me] " + acmessage)
 
         elif data_list[0] == "BUSY":
             print("Server is full, fuck off.\n")
@@ -91,22 +99,24 @@ def login():
     sendDataString("HELLO-FROM " + name)
 
 def sendMessage(messageTBS):
+  
     #https://stackoverflow.com/questions/6903557/splitting-on-first-occurrence
     #https://stackoverflow.com/questions/8113782/split-string-on-whitespace-in-python
     messageSplitted = messageTBS.split(None, 1)
    
     username = messageSplitted[0].split('@')[1]
     message = messageSplitted[1]
+    print("MESSAGE INTO BYTEARRAY:  " + message)
     byteMessage = message.encode()
     dataArray = bytearray(byteMessage)
+ 
     lrc = 0
-    for x in dataArray:
-        lrc = (lrc + x) + 0xFF
-    lrc = (((lrc ^ 0xFF) + 1) + 0xFF)
-    print(lrc)
+    for b in dataArray:
+        lrc ^= b
+    print("checksum of message sent: " + str(lrc))
 
     sendDataString("SEND " + username + " " + message + "{" + str(lrc))
-    print("[me -> " + username + "] " + message)
+    print("[me -> " + username + "] " + message + "\n")
 
     
 login()
