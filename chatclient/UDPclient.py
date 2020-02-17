@@ -5,7 +5,7 @@ import time
 
 def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("18.195.107.195", 5382))
+    s.connect(("172.20.10.4", 5382))
     return s
 
 s = connect()
@@ -15,8 +15,28 @@ def getData():
         #https://stackoverflow.com/questions/423379/using-global-variables-in-a-function
         global s
         data = s.recv(4096)
+        
+
+        data_list_bytes = data.split()
+        if len(data_list_bytes) == 3:
+            dataArray = bytearray(data_list_bytes[2])
+            dataArraySplit = dataArray.split(b"{")
+            print(dataArray[0])
+            
+            lrc = 0
+            for x in dataArraySplit[0]:
+                lrc = (lrc + x) + 0xFF
+            lrc = (((lrc ^ 0xFF) + 1) + 0xFF)
+            print(lrc)
+            
+            if(lrc == dataArraySplit[1]):
+                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            
+
+
         #https://www.w3resource.com/python/python-bytes.php#byte-string
         data_string = data.decode("utf-8")
+        print(data_string)
         data_list = data_string.split()
         #print("LOOK: " +  data_list[0])
         #print(data_list)
@@ -77,8 +97,15 @@ def sendMessage(messageTBS):
    
     username = messageSplitted[0].split('@')[1]
     message = messageSplitted[1]
+    byteMessage = message.encode()
+    dataArray = bytearray(byteMessage)
+    lrc = 0
+    for x in dataArray:
+        lrc = (lrc + x) + 0xFF
+    lrc = (((lrc ^ 0xFF) + 1) + 0xFF)
+    print(lrc)
 
-    sendDataString("SEND " + username + " " + message)
+    sendDataString("SEND " + username + " " + message + "{" + str(lrc))
     print("[me -> " + username + "] " + message)
 
     

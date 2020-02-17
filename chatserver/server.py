@@ -72,7 +72,7 @@ def client_thread(clientsocket, address):
                     if not online:
                         string_bytes = "UNKNOWN"
                         clientsocket.sendall(string_bytes.encode("utf-8"))
-                    else:
+                else:
                       string_bytes = "BAD-RQST-HDR"
                       clientsocket.sendall(string_bytes.encode("utf-8"))
             else:
