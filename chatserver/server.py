@@ -22,7 +22,7 @@ class User:
 def client_thread(clientsocket, address):
     while True:
         try:
-             if len(clients) >= 64:
+            if len(clients) >= 64:
                 string_bytes = "BUSY"
                 clientsocket.sendall(string_bytes.encode("utf-8"))
                 return
