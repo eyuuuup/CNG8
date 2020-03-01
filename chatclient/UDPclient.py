@@ -8,11 +8,21 @@ def connect():
     s.connect(("localhost", 1337))
     return s
 
+def checksum(data, length):
+    sum1 = 0
+    sum2 = 0
+
+    for x in range(0, length):
+        sum1 = (sum1 + data[x]) % 255
+        sum2 = (sum2 + sum1) % 255
+
+    return (sum2 << 8) | sum1
+    
+
 s = connect()
 
 def getData():
     while (True):
-        #https://stackoverflow.com/questions/423379/using-global-variables-in-a-function
         global s
         data = s.recv(4096)
         
@@ -20,50 +30,30 @@ def getData():
         data_list = data_string.split()
 
         if data_list[0] == "DELIVERY":
-
-            message1bitFlipped = b"101"
-            message2bitFlipped = b"111"
-            message3bitFlipped = b"011"
-            
+            username = data_list[1]
             message = ""
-            #https://stackoverflow.com/questions/6148619/start-index-for-iterating-python-list
             for x in data_list[2:]:
                 message += x + " "
-            acmessage = message.split('{')[0]
-            lrcRecieved = message.split('{')[1]
 
-            print("MESSAGE INTO BYTEARRAY: " + acmessage)
-            dataArray = bytearray(acmessage.encode())
+                    
+            receivedMessage = message.strip().split("{")
+            actualMessage = receivedMessage[0]
+            print(receivedMessage)
+            dataByteArray = bytearray(actualMessage, encoding="utf-8")
+
+            dataByteArray.append(int(receivedMessage[1]))
+            dataByteArray.append(int(receivedMessage[2]))
+            csum = checksum(dataByteArray, len(dataByteArray))
             
-            #https://en.wikipedia.org/wiki/Checksum
-            lrc = 0
-            for b in dataArray:
-                lrc ^= b
-            print("checksum of recieved message: " + str(lrc))
-            
-            print("checksum of ARRIVED sent message: " + str(lrcRecieved))
-            if (lrc == int(lrcRecieved)):
-               print("No odd-bit error, but you might want to check for a double digit error\n")
+            if csum == 0:
+                print("No error found\n")
             else:
-                print("Yeah you have a odd-bit error\n")
-            
+                print("Error found\n")
 
-
-        #https://www.w3resource.com/python/python-bytes.php#byte-string
-      
-        #print("LOOK: " +  data_list[0])
-        #print(data_list)
+            print("[" + username + " -> me] " + actualMessage)
 
         if not data: 
             print("Socket is closed.")
-
-        elif data_list[0] == "DELIVERY":
-            username = data_list[1]
-            message = ""
-            #https://stackoverflow.com/questions/6148619/start-index-for-iterating-python-list
-            for x in data_list[2:]:
-                message += x + " "
-            print("[" + username + " -> me] " + message.split('{')[0])
 
         elif data_list[0] == "BUSY":
             print("Server is full, fuck off.\n")
@@ -111,19 +101,22 @@ def sendMessage(messageTBS):
    
     username = messageSplitted[0].split('@')[1]
     message = messageSplitted[1]
-    print("MESSAGE INTO BYTEARRAY:  " + message)
-    byteMessage = message.encode()
-    dataArray = bytearray(byteMessage)
- 
-    lrc = 0
-    for b in dataArray:
-        lrc ^= b
-    print("checksum of message sent: " + str(lrc))
+    dataByteArray = bytearray(message, encoding = "utf-8")
 
-    sendDataString("SEND " + username + " " + message + "{" + str(lrc))
-    print("[me -> " + username + "] " + message + "\n")
-
+    csum = checksum(dataByteArray, len(dataByteArray))
+    f0 = csum & 0xff
+    f1 = (csum >> 8) & 0xff
+    c0 = 0xff - ((f0 + f1) % 0xff)
+    c1 = 0xff - ((f0 + c0) % 0xff)
+     
+    dataByteArray.append(c0)
+    dataByteArray.append(c1)
     
+    message += "{" + str(c0) + "{" + str(c1)
+
+    sendDataString("SEND " + username + " " + message)
+    #print("[me -> " + username + "] " + message + "\n")
+
 login()
 while(True):
     #https://www.pythoncentral.io/pythons-time-sleep-pause-wait-sleep-stop-your-code/
