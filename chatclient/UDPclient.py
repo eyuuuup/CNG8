@@ -17,9 +17,29 @@ def checksum(data, length):
         sum2 = (sum2 + sum1) % 255
 
     return (sum2 << 8) | sum1
-    
 
+ackReceived = True
+
+def ackTimer(message):
+    global ackReceived
+    print("ACKTIMER CALLED")
+    timer = 0
+    while not ackReceived:
+        print("ACKTIMER " + str(timer))
+        timer += 1
+        time.sleep(1)
+        if(timer == 50):
+            print("CAN'T SEND MESSAGE, BACKING OFF")
+            print("FEEL FREE TO TYPE IN ANOTHER COMMAND")
+            ackReceived = True
+            return
+        if(timer % 10 == 0):
+            sendMessage(message)
+        
+    return
+    
 s = connect()
+
 
 def getData():
     while (True):
@@ -35,22 +55,28 @@ def getData():
             for x in data_list[2:]:
                 message += x + " "
 
-                    
-            receivedMessage = message.strip().split("{")
-            actualMessage = receivedMessage[0]
-            print(receivedMessage)
-            dataByteArray = bytearray(actualMessage, encoding="utf-8")
-
-            dataByteArray.append(int(receivedMessage[1]))
-            dataByteArray.append(int(receivedMessage[2]))
-            csum = checksum(dataByteArray, len(dataByteArray))
-            
-            if csum == 0:
-                print("No error found\n")
+            if(message.strip() == "ACK".strip()):
+                global ackReceived
+                ackReceived = True
+                print("ACK RECEIVED")
             else:
-                print("Error found\n")
+                    
+                receivedMessage = message.strip().split("{")
+                actualMessage = receivedMessage[0]
+                print(receivedMessage)
+                dataByteArray = bytearray(actualMessage, encoding="utf-8")
 
-            print("[" + username + " -> me] " + actualMessage)
+                dataByteArray.append(int(receivedMessage[1]))
+                dataByteArray.append(int(receivedMessage[2]))
+                csum = checksum(dataByteArray, len(dataByteArray))
+                
+                if csum == 0:
+                    print("No error found\n")
+                else:
+                    print("Error found\n")
+
+                print("[" + username + " -> me] " + actualMessage)
+                sendDataString("SEND " + username + " " + "ACK")
 
         if not data: 
             print("Socket is closed.")
@@ -60,7 +86,6 @@ def getData():
 
         elif data_list[0] == "IN-USE":
             print("Username already taken, try again\n")
-            #https://stackoverflow.com/questions/40519375/what-does-x-is-used-prior-to-global-declaration-mean-python-2
             s = connect()
             login()
 
@@ -79,13 +104,11 @@ def getData():
             print(data_string)
 
 t = threading.Thread(target=getData, args=())
-#https://stackoverflow.com/questions/2564137/how-to-terminate-a-thread-when-main-program-ends
 t.daemon = True
 t.start()
 
 def sendDataString(string_bytes):
     string_bytes += "\n"
-    #https://stackoverflow.com/questions/42612002/python-sockets-error-typeerror-a-bytes-like-object-is-required-not-str-with?noredirect=1&lq=1
     string_bytes = string_bytes.encode("utf-8")
     s.sendall(string_bytes)
 
@@ -95,8 +118,6 @@ def login():
 
 def sendMessage(messageTBS):
   
-    #https://stackoverflow.com/questions/6903557/splitting-on-first-occurrence
-    #https://stackoverflow.com/questions/8113782/split-string-on-whitespace-in-python
     messageSplitted = messageTBS.split(None, 1)
    
     username = messageSplitted[0].split('@')[1]
@@ -111,25 +132,37 @@ def sendMessage(messageTBS):
      
     dataByteArray.append(c0)
     dataByteArray.append(c1)
-    
+
+    printMessage = message
     message += "{" + str(c0) + "{" + str(c1)
 
     sendDataString("SEND " + username + " " + message)
-    #print("[me -> " + username + "] " + message + "\n")
+    
+    global ackReceived
+    ackReceived = False
+    print("[me -> " + username + "] " + printMessage + "\n")
 
 login()
 while(True):
-    #https://www.pythoncentral.io/pythons-time-sleep-pause-wait-sleep-stop-your-code/
     time.sleep(0.5)
     command = input("Type in your command: \n")
+
     if command == "!quit":
-        s.close()
-        #https://stackoverflow.com/questions/14639077/how-to-use-sys-exit-in-python
+        #s.close()
         sys.exit(0)
+
     elif command == "!who":
         sendDataString("WHO")
+
     elif command[0] == '@':
-        sendMessage(command)
+        if not (ackReceived):
+            print("Waiting for ack...")
+        else:
+            sendMessage(command)
+            t = threading.Thread(target=ackTimer, args=(command, ))
+            t.daemon = True
+            t.start()
+
     else: 
         sendDataString(command)
     time.sleep(0.5)
