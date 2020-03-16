@@ -70,7 +70,6 @@ def getData():
                     dataByteArray.append(int(receivedMessage[1]))
                     dataByteArray.append(int(receivedMessage[2]))
                     csum = checksum(dataByteArray, len(dataByteArray))
-                    
                     if csum == 0:
                         print("No error found\n")
                     else:
@@ -78,6 +77,7 @@ def getData():
 
                     print("[" + username + " -> me] " + actualMessage)
                     sendDataString("SEND " + username + " " + "ACK")
+                    break
 
             if not data: 
                 print("Socket is closed.")
@@ -93,6 +93,12 @@ def getData():
             elif data_list[0] == "SEND-OK":
                 print("Message sent.\n")
 
+            elif data_list[0] == "SET-OK":
+                print("SETTING HAS BEEN CHANGED.\n")
+            
+            elif data_list[0] == "VALUE":
+                print(data_list)
+
             elif data_list[0] == "WHO-OK":
                 print("Users online: ")
                 for x in data_list[1:]:
@@ -101,9 +107,37 @@ def getData():
             elif data_list[0] == "UNKNOWN":
                 print("User not online.")
 
+            elif data_list[0] == "HELLO":
+                print("SERVER SAYS HELLO " + data_list[1])
+
             else: 
-                print(data_string)
-        except UnicodeDecodeError as err:
+                username = data_list[1]
+                message = ""
+                for x in data_list[2:]:
+                    message += x + " "
+
+                if(message.strip() == "ACK".strip()):
+                    ackReceived = True
+                    print("ACK RECEIVED")
+                else:
+                        
+                    receivedMessage = message.strip().split("{")
+                    actualMessage = receivedMessage[0]
+                    print(receivedMessage)
+                    dataByteArray = bytearray(actualMessage, encoding="utf-8")
+
+                    dataByteArray.append(int(receivedMessage[1]))
+                    dataByteArray.append(int(receivedMessage[2]))
+                    csum = checksum(dataByteArray, len(dataByteArray))
+                    
+                    if csum == 0:
+                        print("No error found\n")
+                    else:
+                        print("Error found\n")
+
+                    print("[" + username + " -> me] " + actualMessage)
+                    sendDataString("SEND " + username + " " + "ACK")
+        except:
             print("ERROR DETECTED")
 
 t = threading.Thread(target=getData, args=())
