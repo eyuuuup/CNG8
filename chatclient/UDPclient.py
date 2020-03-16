@@ -5,7 +5,7 @@ import time
 
 def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("localhost", 1337))
+    s.connect(("18.195.107.195", 5382))
     return s
 
 def checksum(data, length):
@@ -43,65 +43,68 @@ s = connect()
 
 def getData():
     while (True):
-        global s
-        data = s.recv(4096)
-        
-        data_string = data.decode("utf-8")
-        data_list = data_string.split()
+        try:
+            global s
+            data = s.recv(4096)
+            print(data)
+            data_string = data.decode("utf-8")
+            data_list = data_string.split()
 
-        if data_list[0] == "DELIVERY":
-            username = data_list[1]
-            message = ""
-            for x in data_list[2:]:
-                message += x + " "
+            if data_list[0] == "DELIVERY":
+                username = data_list[1]
+                message = ""
+                for x in data_list[2:]:
+                    message += x + " "
 
-            if(message.strip() == "ACK".strip()):
-                global ackReceived
-                ackReceived = True
-                print("ACK RECEIVED")
-            else:
-                    
-                receivedMessage = message.strip().split("{")
-                actualMessage = receivedMessage[0]
-                print(receivedMessage)
-                dataByteArray = bytearray(actualMessage, encoding="utf-8")
-
-                dataByteArray.append(int(receivedMessage[1]))
-                dataByteArray.append(int(receivedMessage[2]))
-                csum = checksum(dataByteArray, len(dataByteArray))
-                
-                if csum == 0:
-                    print("No error found\n")
+                if(message.strip() == "ACK".strip()):
+                    global ackReceived
+                    ackReceived = True
+                    print("ACK RECEIVED")
                 else:
-                    print("Error found\n")
+                        
+                    receivedMessage = message.strip().split("{")
+                    actualMessage = receivedMessage[0]
+                    print(receivedMessage)
+                    dataByteArray = bytearray(actualMessage, encoding="utf-8")
 
-                print("[" + username + " -> me] " + actualMessage)
-                sendDataString("SEND " + username + " " + "ACK")
+                    dataByteArray.append(int(receivedMessage[1]))
+                    dataByteArray.append(int(receivedMessage[2]))
+                    csum = checksum(dataByteArray, len(dataByteArray))
+                    
+                    if csum == 0:
+                        print("No error found\n")
+                    else:
+                        print("Error found\n")
 
-        if not data: 
-            print("Socket is closed.")
+                    print("[" + username + " -> me] " + actualMessage)
+                    sendDataString("SEND " + username + " " + "ACK")
 
-        elif data_list[0] == "BUSY":
-            print("Server is full, fuck off.\n")
+            if not data: 
+                print("Socket is closed.")
 
-        elif data_list[0] == "IN-USE":
-            print("Username already taken, try again\n")
-            s = connect()
-            login()
+            elif data_list[0] == "BUSY":
+                print("Server is full, fuck off.\n")
 
-        elif data_list[0] == "SEND-OK":
-            print("Message sent.\n")
+            elif data_list[0] == "IN-USE":
+                print("Username already taken, try again\n")
+                s = connect()
+                login()
 
-        elif data_list[0] == "WHO-OK":
-            print("Users online: ")
-            for x in data_list[1:]:
-                print(x)
-            print("\n")
-        elif data_list[0] == "UNKNOWN":
-            print("User not online.")
+            elif data_list[0] == "SEND-OK":
+                print("Message sent.\n")
 
-        else: 
-            print(data_string)
+            elif data_list[0] == "WHO-OK":
+                print("Users online: ")
+                for x in data_list[1:]:
+                    print(x)
+                print("\n")
+            elif data_list[0] == "UNKNOWN":
+                print("User not online.")
+
+            else: 
+                print(data_string)
+        except UnicodeDecodeError as err:
+            print("ERROR DETECTED")
 
 t = threading.Thread(target=getData, args=())
 t.daemon = True
