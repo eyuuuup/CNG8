@@ -77,10 +77,6 @@ def getData():
 
                     print("[" + username + " -> me] " + actualMessage)
                     sendDataString("SEND " + username + " " + "ACK")
-                    break
-
-            if not data: 
-                print("Socket is closed.")
 
             elif data_list[0] == "BUSY":
                 print("Server is full, fuck off.\n")
@@ -111,32 +107,9 @@ def getData():
                 print("SERVER SAYS HELLO " + data_list[1])
 
             else: 
-                username = data_list[1]
-                message = ""
-                for x in data_list[2:]:
-                    message += x + " "
-
-                if(message.strip() == "ACK".strip()):
-                    ackReceived = True
-                    print("ACK RECEIVED")
-                else:
-                        
-                    receivedMessage = message.strip().split("{")
-                    actualMessage = receivedMessage[0]
-                    print(receivedMessage)
-                    dataByteArray = bytearray(actualMessage, encoding="utf-8")
-
-                    dataByteArray.append(int(receivedMessage[1]))
-                    dataByteArray.append(int(receivedMessage[2]))
-                    csum = checksum(dataByteArray, len(dataByteArray))
-                    
-                    if csum == 0:
-                        print("No error found\n")
-                    else:
-                        print("Error found\n")
-
-                    print("[" + username + " -> me] " + actualMessage)
-                    sendDataString("SEND " + username + " " + "ACK")
+                print("?????????????")
+                print(data_list)
+           
         except:
             print("ERROR DETECTED")
 
